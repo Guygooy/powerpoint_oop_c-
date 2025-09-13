@@ -16,11 +16,11 @@
   <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@18.2.0/client",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "pptxgenjs": "https://aistudiocdn.com/pptxgenjs@^4.0.1"
+    "react": "https://aistudiocdn.com/react@18.2.0",
+    "pptxgenjs": "https://aistudiocdn.com/pptxgenjs@^4.0.1",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
   }
 }
 </script>
@@ -28,6 +28,435 @@
   <body class="bg-gray-900 text-white">
     <div id="root"></div>
     <!-- שינוי סוג הסקריפט כדי ש-Babel יתרגם אותו עם ההגדרות הנכונות ל-React ו-TypeScript -->
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
+    <script type="text/babel" data-presets="react,typescript" data-type="module">
+import React, { useState, useCallback } from 'react';
+import ReactDOM from 'react-dom/client';
+import { GoogleGenAI, Type } from "@google/genai";
+import PptxGenJS from 'pptxgenjs';
+
+// --- BUNDLED CODE ---
+// All interfaces, constants, components, and services are now in this file
+// to avoid module loading issues in a build-less environment.
+
+// --- from types.ts ---
+interface SlideContent {
+  title: string;
+  content: string[];
+  code?: string;
+}
+
+interface LessonTopic {
+  topic: string;
+  type: 'title' | 'concept' | 'exercise' | 'summary' | 'qa' | 'toc';
+}
+
+// --- from constants.ts ---
+const LESSON_PLAN: LessonTopic[] = [
+  { topic: 'שקופית פתיחה: מבוא לתכנות מונחה עצמים ומחלקות', type: 'title' },
+  { topic: 'נושאי הלימוד במצגת', type: 'toc' },
+  { topic: 'חזרה: מהי תכנות פרוצדורלי?', type: 'concept' },
+  { topic: 'הבעיה עם תכנות פרוצדורלי', type: 'concept' },
+  { topic: 'מבוא לתכנות מונחה עצמים (OOP)', type: 'concept' },
+  { topic: 'ארבעת עמודי התווך של OOP (באופן כללי)', type: 'concept' },
+  { topic: 'מהי מחלקה (Class)?', type: 'concept' },
+  { topic: 'מהו אובייקט (Object)?', type: 'concept' },
+  { topic: 'תחביר C#: הגדרת מחלקה פשוטה', type: 'concept' },
+  { topic: 'תכונות (Fields/Properties)', type: 'concept' },
+  { topic: 'תרגיל 1: הגדרת מחלקת Student', type: 'exercise' },
+  { topic: 'פעולות (Methods)', type: 'concept' },
+  { topic: 'תחביר C#: הוספת פעולות למחלקה', type: 'concept' },
+  { topic: 'תרגיל 2: הוספת פעולה למחלקת Student', type: 'exercise' },
+  { topic: 'יצירת אובייקט (Instantiation) והמילה השמורה new', type: 'concept' },
+  { topic: 'גישה לתכונות ופעולות עם אופרטור הנקודה', type: 'concept' },
+  { topic: 'תרגיל 3: יצירת אובייקטים מסוג Student', type: 'exercise' },
+  { topic: 'פעולות בונות (Constructors)', type: 'concept' },
+  { topic: 'תחביר C#: כתיבת פעולה בונה', type: 'concept' },
+  { topic: 'תרגיל 4: הוספת פעולה בונה למחלקת Student', type: 'exercise' },
+  { topic: 'כימוס (Encapsulation)', type: 'concept' },
+  { topic: 'מאפיינים (Properties) ב-C# - Getters & Setters', type: 'concept' },
+  { topic: 'תחביר C#: שימוש במאפיינים', type: 'concept' },
+  { topic: 'תרגיל 5: שיפור מחלקת Student עם מאפיינים', type: 'exercise' },
+  { topic: 'המילה השמורה this', type: 'concept' },
+  { topic: 'חברים סטטיים (Static) מול חברי מופע (Instance)', type: 'concept' },
+  { topic: 'תחביר C#: הגדרת שדה ופעולה סטטיים', type: 'concept' },
+  { topic: 'תרגיל 6: הוספת מונה סטטי למחלקת Student', type: 'exercise' },
+  { topic: 'מבוא לירושה (Inheritance)', type: 'concept' },
+  { topic: 'מחלקת בסיס ומחלקה נגזרת (Base and Derived)', type: 'concept' },
+  { topic: 'תחביר C#: ירושה והמילה השמורה base', type: 'concept' },
+  { topic: 'תרגיל 7: יצירת מחלקות יורשות', type: 'exercise' },
+  { topic: 'פולימורפיזם: דריסת פעולות (Method Overriding)', type: 'concept' },
+  { topic: 'המילים השמורות virtual ו-override', type: 'concept' },
+  { topic: 'תרגיל 8: דריסת פעולה במחלקה נגזרת', type: 'exercise' },
+  { topic: 'המרה (Casting): המרה כלפי מעלה (Upcasting)', type: 'concept' },
+  { topic: 'המרה (Casting): המרה כלפי מטה (Downcasting)', type: 'concept' },
+  { topic: 'תרגיל 9: תרגול המרות בין אובייקטים', type: 'exercise' },
+  { topic: 'ממשקים (Interfaces)', type: 'concept' },
+  { topic: 'הגדרה ומימוש ממשק ב-C#', type: 'concept' },
+  { topic: 'תרגיל 10: מימוש ממשק פשוט', type: 'exercise' },
+  { topic: 'תרגיל מסכם 1: מחלקת חשבון בנק (BankAccount)', type: 'exercise' },
+  { topic: 'תרגיל מסכם 2: מחלקת מלבן (Rectangle)', type: 'exercise' },
+  { topic: 'תרגיל מסכם 3: מחלקת מכונית (Car) עם מונה סטטי', type: 'exercise' },
+  { topic: 'תרגיל מסכם 4: מחלקת ספר (Book)', type: 'exercise' },
+  { topic: 'תרגיל מסכם 5: מחלקת מוצר (Product) לחנות מקוונת', type: 'exercise' },
+  { topic: 'סיכום וחזרה על מושגים', type: 'summary' },
+  { topic: 'הנחיות לפרויקט מסכם: מערכת לניהול ספרייה', type: 'summary' },
+  { topic: 'שאלות ותשובות', type: 'qa' },
+];
+
+// --- from services/geminiService.ts ---
+const generatePrompt = (topic: LessonTopic): string => {
+  const baseInstructions = `נושא השקופית הוא: "${topic.topic}".`;
+  
+  switch (topic.type) {
+    case 'title':
+      return `${baseInstructions} זוהי שקופית הפתיחה של המצגת. צור כותרת מרשימה ו-2-3 נקודות המציגות את הנושאים שיילמדו.`;
+    case 'toc':
+      // Skip Title, TOC itself, and the final Q&A slide.
+      const topicsForToc = LESSON_PLAN.slice(2, -1).map(t => t.topic); 
+      return `זוהי שקופית "תוכן עניינים". הכותרת צריכה להיות "${topic.topic}". התוכן צריך להיות רשימת נקודות (bullets) של הנושאים הבאים. הצג כל נושא כנקודה נפרדת ברשימה. אל תוסיף קוד. הנושאים הם: ${topicsForToc.join('; ')}.`;
+    case 'concept':
+      return `${baseInstructions} זהו שקף הסבר. אנא ספק כותרת ברורה, מספר נקודות (bullets) המסבירות את המושג, ודוגמת קוד קצרה ורלוונטית ב-C# אם מתאים.`;
+    case 'exercise':
+      return `${baseInstructions} זהו שקף תרגיל. אנא ספק כותרת "תרגיל:", ותיאור ברור של משימה שהתלמידים צריכים לבצע במחשב שלהם. אם נדרש, כלול קוד התחלתי או דוגמת פלט רצוי.`;
+    case 'summary':
+      return `${baseInstructions} זהו שקף סיכום. סכם את הנקודות המרכזיות שנלמדו עד כה או הצג רעיון לפרויקט מסכם.`;
+    case 'qa':
+      return `${baseInstructions} זוהי שקופית הסיום. צור שקופית פשוטה של "שאלות ותשובות" המעודדת דיון.`;
+    default:
+      return baseInstructions;
+  }
+};
+
+const geminiSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { 
+      type: Type.STRING, 
+      description: "כותרת השקופית בעברית." 
+    },
+    content: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "התוכן המרכזי של השקופית. יכול להיות רשימת נקודות להסבר, או תיאור מפורט של תרגיל. כל פריט במערך הוא פסקה או נקודה."
+    },
+    code: {
+      type: Type.STRING,
+      description: "קטע קוד רלוונטי ב-C#. אם לא נדרש קוד, השאר מחרוזת ריקה."
+    }
+  },
+  required: ['title', 'content']
+};
+
+const generateSlideContent = async (topic: LessonTopic): Promise<SlideContent> => {
+  if (!process.env.API_KEY) {
+    console.error("API_KEY environment variable not set");
+    return {
+      title: "שגיאה: מפתח API חסר",
+      content: ["נראה שמפתח ה-API של Gemini אינו מוגדר.", "אנא ודא שהגדרת את מפתח ה-API בסביבת הפרויקט שלך ורענן את הדף."],
+    };
+  }
+  
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = generatePrompt(topic);
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "אתה מורה מומחה למדעי המחשב המתמחה בשפת C# ובתכנות מונחה עצמים. המשימה שלך היא ליצור תוכן לשקופית אחת במצגת המיועדת לתלמידי כיתה י'-יא' בישראל, בהתאם לתכנית הלימודים של משרד החינוך (יחידה 5). השתמש בעברית פשוטה וברורה להסברים. כל דוגמאות הקוד חייבות להיות ב-C#. התוכן צריך להיות תמציתי ומתאים לשקופית בודדת.",
+        responseMimeType: "application/json",
+        responseSchema: geminiSchema,
+      },
+    });
+
+    const jsonString = response.text.trim();
+    const parsedContent = JSON.parse(jsonString) as SlideContent;
+    return parsedContent;
+
+  } catch (error) {
+    console.error("Gemini API call failed:", error);
+    return {
+      title: "שגיאה ביצירת התוכן",
+      content: ["אירעה שגיאה בעת יצירת תוכן השקופית.", "אנא בדוק את חיבור הרשת ואת מפתח ה-API ונסה שוב."],
+    };
+  }
+};
+
+// --- from services/powerpointService.ts ---
+const TITLE_OPTS = {
+  x: 0.5, y: 0.25, w: 9, h: 1, fontSize: 32, bold: true, align: 'right' as const, fontFace: 'Arial', color: '0088CC',
+};
+const CONTENT_OPTS = {
+  x: 5.0, y: 1.5, w: 4.5, h: 3.8, fontSize: 16, bullet: { type: 'bullet' as const, code: '25CF' }, align: 'right' as const, fontFace: 'Arial', paraSpaceAfter: 10,
+};
+const CODE_OPTS = {
+  x: 0.5, y: 1.5, w: 4.3, h: 3.8, fontSize: 12, fontFace: 'Courier New', fill: { color: 'F5F5F5' }, color: '333333', align: 'left' as const, lineSpacing: 18,
+};
+const SINGLE_COL_CONTENT_OPTS = {
+  x: 0.5, y: 1.5, w: 9, h: 3.8, fontSize: 18, bullet: { type: 'bullet' as const, code: '25CF' }, align: 'right' as const, fontFace: 'Arial', paraSpaceAfter: 10,
+};
+
+const exportToPptx = async (slides: SlideContent[], presentationTitle: string): Promise<void> => {
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    pptx.author = 'AI Presentation Generator';
+    pptx.title = presentationTitle;
+
+    for (const slideContent of slides) {
+        const slide = pptx.addSlide();
+        slide.background = { color: '1A202C' };
+        slide.addText(`© ${new Date().getFullYear()} C# OOP Presentation`, {
+            x: 0.5, y: 5.1, w: 9, h: 0.4, align: 'center', color: 'CCCCCC', fontSize: 10
+        });
+        slide.addText(slideContent.title, { ...TITLE_OPTS, color: '38BDF8' });
+        const contentText = slideContent.content.map(point => ({ text: point, options: { breakLine: true } }));
+        if (slideContent.code) {
+            slide.addText(slideContent.code, CODE_OPTS);
+            slide.addText(contentText, { ...CONTENT_OPTS, color: 'FFFFFF' });
+        } else {
+            slide.addText(contentText, { ...SINGLE_COL_CONTENT_OPTS, color: 'FFFFFF' });
+        }
+    }
+    await pptx.writeFile({ fileName: `${presentationTitle.replace(/\s/g, '_')}.pptx` });
+};
+
+// --- from components/Spinner.tsx ---
+const Spinner: React.FC = () => (
+  <svg className="animate-spin h-12 w-12 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
+
+// --- from components/Welcome.tsx ---
+interface WelcomeProps { onStart: () => void; }
+const Welcome: React.FC<WelcomeProps> = ({ onStart }) => (
+    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+        <h2 className="text-4xl font-bold text-white mb-4">ברוכים הבאים למחולל המצגות</h2>
+        <p className="text-xl text-gray-300 max-w-2xl mb-8">
+            אפליקציה זו תיצור עבורכם מצגת שלב-אחר-שלב כדי ללמד את יסודות תכנות מונחה עצמים בשפת C#,
+            בדיוק לפי תכנית הלימודים. לחצו על הכפתור כדי להתחיל וליצור את השקופית הראשונה.
+        </p>
+        <button
+            onClick={onStart}
+            className="px-10 py-4 text-xl font-bold text-white bg-cyan-600 rounded-lg hover:bg-cyan-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-cyan-400"
+        >
+            התחל ביצירת המצגת
+        </button>
+    </div>
+);
+
+// --- from components/Slide.tsx ---
+interface SlideProps {
+  slideContent: SlideContent | null;
+  slideNumber: number;
+  totalSlides: number;
+  isLoading: boolean;
+  error: string | null;
+  topic: string;
+}
+const Slide: React.FC<SlideProps> = ({ slideContent, slideNumber, totalSlides, isLoading, error, topic }) => {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <Spinner />
+        <p className="mt-4 text-lg text-gray-400">יוצר שקופית בנושא:</p>
+        <p className="mt-1 text-xl text-cyan-400 font-semibold">{topic}</p>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center text-red-400">
+        <h2 className="text-2xl font-bold mb-4">אופס, משהו השתבש</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
+  if (!slideContent) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <p className="text-gray-500">מוכן להתחיל...</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col h-full p-8 overflow-y-auto relative">
+      <div className="absolute top-4 left-4 text-sm font-mono text-gray-500">{slideNumber} / {totalSlides}</div>
+      <h2 className="text-3xl font-bold text-cyan-400 mb-6 pb-2 border-b-2 border-cyan-700">{slideContent.title}</h2>
+      <div className={`flex-grow ${slideContent.code ? 'grid grid-cols-1 md:grid-cols-2 gap-8' : ''}`}>
+        <div className="prose prose-invert max-w-none prose-p:text-gray-300 prose-ul:text-gray-300">
+          <ul className="space-y-4 text-lg list-disc pr-6">
+            {slideContent.content.map((point, index) => <li key={index}>{point}</li>)}
+          </ul>
+        </div>
+        {slideContent.code && (
+          <div className="bg-gray-900 rounded-md p-4 flex flex-col">
+            <div className="text-sm text-gray-400 mb-2 font-mono flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+              C# Code
+            </div>
+            <pre className="text-sm text-left whitespace-pre-wrap flex-grow bg-transparent text-yellow-300 font-mono" dir="ltr">
+              <code>{slideContent.code.trim()}</code>
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- from components/Controls.tsx ---
+interface ControlsProps {
+  onNext: () => void;
+  onPrev: () => void;
+  isNextDisabled: boolean;
+  isPrevDisabled: boolean;
+  isLoading: boolean;
+  onExport: () => void;
+  isExporting: boolean;
+  isExportDisabled: boolean;
+}
+const Controls: React.FC<ControlsProps> = ({ onNext, onPrev, isNextDisabled, isPrevDisabled, isLoading, onExport, isExporting, isExportDisabled }) => {
+  const baseButtonClasses = "px-6 py-3 text-lg font-semibold rounded-md transition-all duration-300 focus:outline-none focus:ring-4 disabled:opacity-50";
+  const disabledClasses = "bg-gray-600 cursor-not-allowed text-gray-400";
+  return (
+    <div className="flex justify-center items-center w-full gap-4">
+        <button onClick={onPrev} disabled={isPrevDisabled || isExporting} className={`${baseButtonClasses} ${isPrevDisabled || isExporting ? disabledClasses : 'bg-gray-700 hover:bg-gray-600 focus:ring-gray-500'}`} aria-label="Previous Slide">הקודם</button>
+        <button onClick={onNext} disabled={isNextDisabled || isExporting} className={`${baseButtonClasses} ${isNextDisabled || isExporting ? disabledClasses : 'bg-cyan-600 hover:bg-cyan-500 focus:ring-cyan-400 text-white'}`} aria-label="Next Slide">{isLoading ? 'יוצר...' : 'הבא'}</button>
+        <button onClick={onExport} disabled={isExportDisabled || isExporting} className={`${baseButtonClasses} ${isExportDisabled || isExporting ? disabledClasses : 'bg-green-600 hover:bg-green-500 focus:ring-green-400 text-white'}`} aria-label="Export to PowerPoint">{isExporting ? 'מייצא...' : 'ייצא ל-PowerPoint'}</button>
+    </div>
+  );
+};
+
+// --- from App.tsx ---
+const App: React.FC = () => {
+  const [slides, setSlides] = useState<Array<SlideContent | null>>(new Array(LESSON_PLAN.length).fill(null));
+  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(-1);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+
+  const generateSlide = useCallback(async (index: number) => {
+    if (index < 0 || index >= LESSON_PLAN.length || slides[index]) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const topic: LessonTopic = LESSON_PLAN[index];
+      const content = await generateSlideContent(topic);
+      setSlides(prevSlides => {
+        const newSlides = [...prevSlides];
+        newSlides[index] = content;
+        return newSlides;
+      });
+    } catch (err) {
+      console.error("Error generating slide:", err);
+      setError("שגיאה ביצירת השקופית. אנא נסה שוב.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [slides]);
+
+  const handleStart = useCallback(() => {
+    setCurrentSlideIndex(0);
+    if (!slides[0]) generateSlide(0);
+  }, [generateSlide, slides]);
+
+  const handleNext = useCallback(() => {
+    const nextIndex = currentSlideIndex + 1;
+    if (nextIndex < LESSON_PLAN.length) {
+      setCurrentSlideIndex(nextIndex);
+      if (!slides[nextIndex]) generateSlide(nextIndex);
+    }
+  }, [currentSlideIndex, generateSlide, slides]);
+
+  const handlePrev = useCallback(() => {
+    if (currentSlideIndex > 0) setCurrentSlideIndex(currentSlideIndex - 1);
+  }, [currentSlideIndex]);
+
+  const handleExport = useCallback(async () => {
+    const generatedSlides = slides.filter((s): s is SlideContent => s !== null);
+    if (generatedSlides.length === 0) {
+        setExportMessage("יש ליצור לפחות שקופית אחת כדי לייצא.");
+        setTimeout(() => setExportMessage(null), 3000);
+        return;
+    }
+    setIsExporting(true);
+    setExportMessage("מכין את המצגת לייצוא...");
+    try {
+        await exportToPptx(generatedSlides, "C# OOP Presentation");
+        setExportMessage("המצגת יוצאה בהצלחה!");
+    } catch (err) {
+        console.error("Error exporting to PowerPoint:", err);
+        setExportMessage("אירעה שגיאה בייצוא המצגת.");
+    } finally {
+        setTimeout(() => {
+            setIsExporting(false);
+            setExportMessage(null);
+        }, 3000);
+    }
+  }, [slides]);
+
+  const currentSlide = currentSlideIndex >= 0 ? slides[currentSlideIndex] : null;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 font-sans">
+      <header className="w-full max-w-5xl text-center mb-6">
+        <h1 className="text-4xl font-bold text-cyan-400">מחולל מצגות: תכנות מונחה עצמים ב-C#</h1>
+        <p className="text-lg text-gray-400 mt-2">יחידה 5 לפי תכנית הלימודים של משרד החינוך</p>
+      </header>
+      
+      <main className="w-full max-w-5xl h-[60vh] flex flex-col bg-gray-800 shadow-2xl shadow-cyan-500/10 rounded-lg border border-gray-700">
+        {currentSlideIndex === -1 ? (
+          <Welcome onStart={handleStart} />
+        ) : (
+          <Slide 
+            slideContent={currentSlide} 
+            slideNumber={currentSlideIndex + 1} 
+            totalSlides={LESSON_PLAN.length}
+            isLoading={isLoading} 
+            error={error} 
+            topic={LESSON_PLAN[currentSlideIndex].topic}
+          />
+        )}
+      </main>
+      
+      {currentSlideIndex !== -1 && (
+        <footer className="w-full max-w-5xl mt-6">
+          <Controls 
+            onNext={handleNext}
+            onPrev={handlePrev}
+            isNextDisabled={isLoading || currentSlideIndex >= LESSON_PLAN.length - 1}
+            isPrevDisabled={isLoading || currentSlideIndex <= 0}
+            isLoading={isLoading}
+            onExport={handleExport}
+            isExporting={isExporting}
+            isExportDisabled={isLoading || slides.every(s => s === null)}
+          />
+           {exportMessage && (
+            <p className="text-center text-sm text-cyan-300 mt-3 h-4">{exportMessage}</p>
+          )}
+        </footer>
+      )}
+    </div>
+  );
+};
+
+
+// --- RENDER APPLICATION ---
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+    </script>
   </body>
 </html>
