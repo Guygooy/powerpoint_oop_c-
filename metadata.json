@@ -1,0 +1,5 @@
+{
+  "name": "C# OOP Presentation Generator",
+  "description": "An interactive web application that generates a slide-by-slide presentation for teaching Object-Oriented Programming in C# to high school students, following the Israeli Ministry of Education's curriculum.",
+  "requestFramePermissions": []
+}
