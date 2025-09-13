@@ -3,8 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { SlideContent, LessonTopic } from '../types.ts';
 import { LESSON_PLAN } from '../constants.ts';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const generatePrompt = (topic: LessonTopic): string => {
   const baseInstructions = `נושא השקופית הוא: "${topic.topic}".`;
   
@@ -57,7 +55,8 @@ export const generateSlideContent = async (topic: LessonTopic): Promise<SlideCon
       content: ["נראה שמפתח ה-API של Gemini אינו מוגדר.", "אנא ודא שהגדרת את מפתח ה-API בסביבת הפרויקט שלך ורענן את הדף."],
     };
   }
-
+  
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = generatePrompt(topic);
   
   try {
