@@ -3,10 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { SlideContent, LessonTopic } from '../types.ts';
 import { LESSON_PLAN } from '../constants.ts';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set");
-}
-
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const generatePrompt = (topic: LessonTopic): string => {
@@ -54,6 +50,14 @@ const schema = {
 
 
 export const generateSlideContent = async (topic: LessonTopic): Promise<SlideContent> => {
+  if (!process.env.API_KEY) {
+    console.error("API_KEY environment variable not set");
+    return {
+      title: "שגיאה: מפתח API חסר",
+      content: ["נראה שמפתח ה-API של Gemini אינו מוגדר.", "אנא ודא שהגדרת את מפתח ה-API בסביבת הפרויקט שלך ורענן את הדף."],
+    };
+  }
+
   const prompt = generatePrompt(topic);
   
   try {
