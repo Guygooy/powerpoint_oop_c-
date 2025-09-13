@@ -204,16 +204,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- from services/powerpointService.ts ---
   const TITLE_OPTS = {
-    x: 0.5, y: 0.25, w: 9, h: 1, fontSize: 32, bold: true, align: 'right' as const, fontFace: 'Arial', color: '0088CC',
+    x: 0.5, y: 0.25, w: 9, h: 1, fontSize: 32, bold: true, align: 'right', fontFace: 'Arial', color: '0088CC',
   };
   const CONTENT_OPTS = {
-    x: 5.0, y: 1.5, w: 4.5, h: 3.8, fontSize: 16, bullet: { type: 'bullet' as const, code: '25CF' }, align: 'right' as const, fontFace: 'Arial', paraSpaceAfter: 10,
+    x: 5.0, y: 1.5, w: 4.5, h: 3.8, fontSize: 16, bullet: { type: 'bullet', code: '25CF' }, align: 'right', fontFace: 'Arial', paraSpaceAfter: 10,
   };
   const CODE_OPTS = {
-    x: 0.5, y: 1.5, w: 4.3, h: 3.8, fontSize: 12, fontFace: 'Courier New', fill: { color: 'F5F5F5' }, color: '333333', align: 'left' as const, lineSpacing: 18,
+    x: 0.5, y: 1.5, w: 4.3, h: 3.8, fontSize: 12, fontFace: 'Courier New', fill: { color: 'F5F5F5' }, color: '333333', align: 'left', lineSpacing: 18,
   };
   const SINGLE_COL_CONTENT_OPTS = {
-    x: 0.5, y: 1.5, w: 9, h: 3.8, fontSize: 18, bullet: { type: 'bullet' as const, code: '25CF' }, align: 'right' as const, fontFace: 'Arial', paraSpaceAfter: 10,
+    x: 0.5, y: 1.5, w: 9, h: 3.8, fontSize: 18, bullet: { type: 'bullet', code: '25CF' }, align: 'right', fontFace: 'Arial', paraSpaceAfter: 10,
   };
 
   const exportToPptx = async (slides: SlideContent[], presentationTitle: string): Promise<void> => {
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- from components/Spinner.tsx ---
-  const Spinner: React.FC = () => (
+  const Spinner = () => (
     <svg className="animate-spin h-12 w-12 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -249,8 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   // --- from components/Welcome.tsx ---
-  interface WelcomeProps { onStart: () => void; }
-  const Welcome: React.FC<WelcomeProps> = ({ onStart }) => (
+  const Welcome = ({ onStart }) => (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
           <h2 className="text-4xl font-bold text-white mb-4">ברוכים הבאים למחולל המצגות</h2>
           <p className="text-xl text-gray-300 max-w-2xl mb-8">
@@ -267,15 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   // --- from components/Slide.tsx ---
-  interface SlideProps {
-    slideContent: SlideContent | null;
-    slideNumber: number;
-    totalSlides: number;
-    isLoading: boolean;
-    error: string | null;
-    topic: string;
-  }
-  const Slide: React.FC<SlideProps> = ({ slideContent, slideNumber, totalSlides, isLoading, error, topic }) => {
+  const Slide = ({ slideContent, slideNumber, totalSlides, isLoading, error, topic }) => {
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -327,17 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- from components/Controls.tsx ---
-  interface ControlsProps {
-    onNext: () => void;
-    onPrev: () => void;
-    isNextDisabled: boolean;
-    isPrevDisabled: boolean;
-    isLoading: boolean;
-    onExport: () => void;
-    isExporting: boolean;
-    isExportDisabled: boolean;
-  }
-  const Controls: React.FC<ControlsProps> = ({ onNext, onPrev, isNextDisabled, isPrevDisabled, isLoading, onExport, isExporting, isExportDisabled }) => {
+  const Controls = ({ onNext, onPrev, isNextDisabled, isPrevDisabled, isLoading, onExport, isExporting, isExportDisabled }) => {
     const baseButtonClasses = "px-6 py-3 text-lg font-semibold rounded-md transition-all duration-300 focus:outline-none focus:ring-4 disabled:opacity-50";
     const disabledClasses = "bg-gray-600 cursor-not-allowed text-gray-400";
     return (
@@ -350,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- from App.tsx ---
-  const App: React.FC = () => {
+  const App = () => {
     const [slides, setSlides] = useState<Array<SlideContent | null>>(new Array(LESSON_PLAN.length).fill(null));
     const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(-1);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -396,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, [currentSlideIndex]);
 
     const handleExport = useCallback(async () => {
-      const generatedSlides = slides.filter((s): s is SlideContent => s !== null);
+      const generatedSlides = slides.filter(s => s !== null);
       if (generatedSlides.length === 0) {
           setExportMessage("יש ליצור לפחות שקופית אחת כדי לייצא.");
           setTimeout(() => setExportMessage(null), 3000);
@@ -405,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setIsExporting(true);
       setExportMessage("מכין את המצגת לייצוא...");
       try {
-          await exportToPptx(generatedSlides, "C# OOP Presentation");
+          await exportToPptx(generatedSlides as SlideContent[], "C# OOP Presentation");
           setExportMessage("המצגת יוצאה בהצלחה!");
       } catch (err) {
           console.error("Error exporting to PowerPoint:", err);
