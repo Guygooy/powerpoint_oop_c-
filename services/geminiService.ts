@@ -1,6 +1,7 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import type { SlideContent, LessonTopic } from '../types';
-import { LESSON_PLAN } from '../constants';
+import type { SlideContent, LessonTopic } from '../types.ts';
+import { LESSON_PLAN } from '../constants.ts';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");

@@ -1,11 +1,12 @@
+
 import React, { useState, useCallback } from 'react';
-import type { SlideContent, LessonTopic } from './types';
-import { LESSON_PLAN } from './constants';
-import { generateSlideContent } from './services/geminiService';
-import { exportToPptx } from './services/powerpointService';
-import Slide from './components/Slide';
-import Controls from './components/Controls';
-import Welcome from './components/Welcome';
+import type { SlideContent, LessonTopic } from './types.ts';
+import { LESSON_PLAN } from './constants.ts';
+import { generateSlideContent } from './services/geminiService.ts';
+import { exportToPptx } from './services/powerpointService.ts';
+import Slide from './components/Slide.tsx';
+import Controls from './components/Controls.tsx';
+import Welcome from './components/Welcome.tsx';
 
 const App: React.FC = () => {
   const [slides, setSlides] = useState<Array<SlideContent | null>>(new Array(LESSON_PLAN.length).fill(null));

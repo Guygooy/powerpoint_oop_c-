@@ -1,4 +1,5 @@
-import type { LessonTopic } from './types';
+
+import type { LessonTopic } from './types.ts';
 
 export const LESSON_PLAN: LessonTopic[] = [
   { topic: 'שקופית פתיחה: מבוא לתכנות מונחה עצמים ומחלקות', type: 'title' },

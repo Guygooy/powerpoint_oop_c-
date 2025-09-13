@@ -1,5 +1,6 @@
+
 import PptxGenJS from 'pptxgenjs';
-import type { SlideContent } from '../types';
+import type { SlideContent } from '../types.ts';
 
 // A. Define layout constants for positioning elements on the slide
 // All units are in inches. Standard widescreen slide is 10" x 5.625"
